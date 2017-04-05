@@ -1,20 +1,24 @@
 """
 Code illustration: 
-
-    Adding support for multiple beat patterns
-        
-        New methods added here:
-            - display_pattern_name()
-            - change_pattern()
-            - restart_play_of_new_pattern
+    Saving Drum Patterns | Object Persistence: pickling and unpickling
     
-        Methods modified here:
-            - create_top_bar() - added a call to display_pattern_name()
-            - on_pattern_changed()
+        New modules imported here:
+            - pickle
+
+        New methods created here:
+            - create_top_menu()
+            - load_project()
+            - save_project()
+            - reconstruct_first_pattern()
+            - show_about()
             
+        Methods modified here:
+            - run_app() - added call to create_top_menu()
+    
 """
 import os
 import time
+import pickle
 import threading
 from tkinter import *
 from tkinter import filedialog
@@ -111,6 +115,40 @@ class DrumMachine:
 
     def init_is_button_clicked_list(self, num_of_rows, num_of_columns):
         return [[False] * num_of_columns for x in range(num_of_rows)]
+
+    def load_project(self):
+        file_path = filedialog.askopenfilename(
+            filetypes=[('Explosion Beat File', '*.ebt')], title='Load Project')
+        if not file_path:
+            return
+        pickled_file_object = open(file_path, "rb")
+        try:
+            self.all_patterns = pickle.load(pickled_file_object)
+        except EOFError:
+            messagebox.showerror("Error",
+                                 "Explosion Beat file seems corrupted or invalid !")
+        pickled_file_object.close()
+        try:
+            self.reconstruct_first_pattern()
+            self.root.title(os.path.basename(file_path) + PROGRAM_NAME)
+        except:
+            messagebox.showerror("Error",
+                                 "An unexpected error occurred trying to process the beat file")
+
+    def save_project(self):
+        saveas_file_name = filedialog.asksaveasfilename(
+            filetypes=[('Explosion Beat File', '*.ebt')], title="Save project as...")
+        if saveas_file_name is None:
+            return
+        pickle.dump(self.all_patterns, open(saveas_file_name, "wb"))
+        self.root.title(os.path.basename(saveas_file_name) + PROGRAM_NAME)
+
+    def reconstruct_first_pattern(self):
+        self.change_pattern()
+
+    def show_about(self):
+        messagebox.showinfo(PROGRAM_NAME,
+                            "Tkinter GUI Application\n Development Blueprints")
 
     def exit_app(self):
         self.keep_playing = False
@@ -277,7 +315,7 @@ class DrumMachine:
         for r in range(MAX_NUMBER_OF_DRUM_SAMPLES):
             for c in range(number_of_columns):
                 self.display_button_color(r, c)
-
+                
     def display_button_color(self, row, col):
         bpu = self.bpu.get()
         original_color = COLOR_1 if ((col//bpu) % 2) else COLOR_2
@@ -358,7 +396,23 @@ class DrumMachine:
                 command=self.on_bpu_changed).grid(row=0, column=7)
         self.display_pattern_name()
 
+    def create_top_menu(self):
+        self.menu_bar = Menu(self.root)
+        self.file_menu = Menu(self.menu_bar, tearoff=0)
+        self.file_menu.add_command(
+            label="Load Project", command=self.load_project)
+        self.file_menu.add_command(
+            label="Save Project", command=self.save_project)
+        self.file_menu.add_separator()
+        self.file_menu.add_command(label="Exit", command=self.exit_app)
+        self.menu_bar.add_cascade(label="File", menu=self.file_menu)
+        self.about_menu = Menu(self.menu_bar, tearoff=0)
+        self.about_menu.add_command(label="About", command=self.show_about)
+        self.menu_bar.add_cascade(label="About", menu=self.about_menu)
+        self.root.config(menu=self.menu_bar)
+
     def run_app(self):
+        self.create_top_menu()
         self.create_top_bar()
         self.create_left_drum_loader()
         self.create_right_button_matrix()
