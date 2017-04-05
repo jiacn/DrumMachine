@@ -1,20 +1,13 @@
 """
 Code illustration: 
-    Saving Drum Patterns | Object Persistence: pickling and unpickling
-    
-        New modules imported here:
-            - pickle
+    applying ttk themes to our play button, stop button, loopbutton
+    adding separators
+     
+        new imports here:
+            - from tkinter import ttk
+        methods modified here:
+            - create_play_bar()
 
-        New methods created here:
-            - create_top_menu()
-            - load_project()
-            - save_project()
-            - reconstruct_first_pattern()
-            - show_about()
-            
-        Methods modified here:
-            - run_app() - added call to create_top_menu()
-    
 """
 import os
 import time
@@ -23,6 +16,7 @@ import threading
 from tkinter import *
 from tkinter import filedialog
 from tkinter import messagebox
+from tkinter import ttk
 import pygame
 
 
@@ -57,7 +51,7 @@ class DrumMachine:
         self.drum_load_entry_widget = [None] * MAX_NUMBER_OF_DRUM_SAMPLES
         self.root.protocol('WM_DELETE_WINDOW', self.exit_app)
         self.init_all_patterns()
-        self.run_app()
+        self.init_gui()
 
     def get_current_pattern_dict(self):
         return self.all_patterns[self.current_pattern.get()]
@@ -315,7 +309,7 @@ class DrumMachine:
         for r in range(MAX_NUMBER_OF_DRUM_SAMPLES):
             for c in range(number_of_columns):
                 self.display_button_color(r, c)
-                
+
     def display_button_color(self, row, col):
         bpu = self.bpu.get()
         original_color = COLOR_1 if ((col//bpu) % 2) else COLOR_2
@@ -329,19 +323,26 @@ class DrumMachine:
         playbar_frame.grid(row=start_row, columnspan=13,
                            sticky=W + E, padx=15, pady=10)
         self.play_icon = PhotoImage(file="images/play.gif")
-        self.play_button = Button(playbar_frame, text='Play',  image=self.play_icon,
-                                  compound='left', command=self.on_play_button_clicked)
+        self.play_button = ttk.Button(
+            playbar_frame, text='Play',  image=self.play_icon, compound='left', command=self.on_play_button_clicked)
         self.play_button.grid(row=start_row, column=1, padx=2)
-        Button(playbar_frame, text='Stop', command=self.on_stop_button_clicked).grid(
+        ttk.Button(playbar_frame, text='Stop', command=self.on_stop_button_clicked).grid(
             row=start_row, column=3, padx=2)
+        ttk.Separator(playbar_frame, orient='vertical').grid(
+            row=start_row, column=5, sticky="ns", padx=5)
         self.to_loop.set(True)
-        Checkbutton(playbar_frame, text='Loop', variable=self.to_loop,
-                    command=self.on_loop_button_toggled).grid(row=start_row, column=16, padx=5)
+        loopbutton = ttk.Checkbutton(
+            playbar_frame, text='Loop', variable=self.to_loop, command=self.on_loop_button_toggled)
+        loopbutton.grid(row=start_row, column=16, padx=5)
+        ttk.Separator(playbar_frame, orient='vertical').grid(
+            row=start_row, column=20, sticky="ns", padx=5)
         Label(playbar_frame, text='Beats Per Minute').grid(
             row=start_row, column=25)
         self.beats_per_minute.set(INITIAL_BEATS_PER_MINUTE)
         Spinbox(playbar_frame, from_=MIN_BEATS_PER_MINUTE, to=MAX_BEATS_PER_MINUTE, width=5,
                 textvariable=self.beats_per_minute, increment=5.0, command=self.on_beats_per_minute_changed).grid(row=start_row, column=30)
+        ttk.Separator(playbar_frame, orient='vertical').grid(
+            row=start_row, column=35, sticky="ns", padx=5)
         photo = PhotoImage(file='images/signature.gif')
         label = Label(playbar_frame, image=photo)
         label.image = photo
@@ -411,7 +412,7 @@ class DrumMachine:
         self.menu_bar.add_cascade(label="About", menu=self.about_menu)
         self.root.config(menu=self.menu_bar)
 
-    def run_app(self):
+    def init_gui(self):
         self.create_top_menu()
         self.create_top_bar()
         self.create_left_drum_loader()
