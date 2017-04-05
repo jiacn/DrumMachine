@@ -1,22 +1,20 @@
 """
 Code illustration: 
-    - Adding all the getter & setter methods for our data structure.
-            - get_current_pattern_dict()     
-            - get_bpu()
-            - set_bpu()
-            - get_number_of_units()
-            - set_number_of_units()
-            - get_list_of_drum_files()
-            - get_drum_file_path(drum_index)
-            - set_drum_file_path(drum_index, file_path)
-            - get_is_button_clicked_list()
-            - set_is_button_clicked_list(num_of_rows, num_of_columns)
-            - get_beats_per_minute()
-            - set_beats_per_minute()
-    - Defining on_number_of_units_changed() method
-    - Defining  on_bpu_changed() method 
+    - Loading drum samples
+        
+        New modules imported here:
+            - os, tkinter.filedialog
+        
+        New methods implemented here
+            on_open_file_button_clicked():
+            display_all_drum_file_names():
+            display_drum_name():
+        
 """
+import os
 from tkinter import *
+from tkinter import filedialog
+
 
 PROGRAM_NAME = ' Explosion Drum Machine '
 MAX_NUMBER_OF_PATTERNS = 10
@@ -49,10 +47,6 @@ class DrumMachine:
 
         self.init_all_patterns()
         self.init_gui()
-
-    #
-    # getters and setters begins
-    #
 
     def get_current_pattern_dict(self):
         return self.all_patterns[self.current_pattern.get()]
@@ -92,9 +86,6 @@ class DrumMachine:
     def set_beats_per_minute(self):
         self.get_current_pattern_dict(
         )['beats_per_minute'] = self.beats_per_minute.get()
-    #
-    # getters & setters ends
-    #
 
     def init_all_patterns(self):
         self.all_patterns = [
@@ -130,7 +121,25 @@ class DrumMachine:
         self.create_right_button_matrix()
 
     def on_open_file_button_clicked(self, drum_index):
-        pass
+        def event_handler():
+            file_path = filedialog.askopenfilename(defaultextension=".wav",
+                                                   filetypes=[("Wave Files", "*.wav"), ("OGG Files", "*.ogg")])
+            if not file_path:
+                return
+            self.set_drum_file_path(drum_index, file_path)
+            self.display_all_drum_file_names()
+        return event_handler
+
+    def display_all_drum_file_names(self):
+        for i, drum_name in enumerate(self.get_list_of_drum_files()):
+            self.display_drum_name(i, drum_name)
+
+    def display_drum_name(self, text_widget_num, file_path):
+        if file_path is None:
+            return
+        drum_name = os.path.basename(file_path)
+        self.drum_load_entry_widget[text_widget_num].delete(0, END)
+        self.drum_load_entry_widget[text_widget_num].insert(0, drum_name)
 
     def on_play_button_clicked(self):
         pass
