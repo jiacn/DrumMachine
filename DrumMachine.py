@@ -1,21 +1,17 @@
 """
-    Tkinter and Threading
-    **********************
-       New modules imported here:
-            - threading
-            
-        New methods defined here:
-            - play_in_thread()
-            - toggle_play_button_state()
-            
-        Method modified here:
-            - start_play()
-            - __init__ method - to override the close button
-            - on_play_button_clicked()
-            - on_stop_button_clicked()
-            - on_loop_button_toggled()
-            - play_pattern() - added a call to toggle_play_button_state()
+Code illustration: 
 
+    Adding support for multiple beat patterns
+        
+        New methods added here:
+            - display_pattern_name()
+            - change_pattern()
+            - restart_play_of_new_pattern
+    
+        Methods modified here:
+            - create_top_bar() - added a call to display_pattern_name()
+            - on_pattern_changed()
+            
 """
 import os
 import time
@@ -55,9 +51,9 @@ class DrumMachine:
         self.loop = True
         self.now_playing = False
         self.drum_load_entry_widget = [None] * MAX_NUMBER_OF_DRUM_SAMPLES
-        self.init_all_patterns()
         self.root.protocol('WM_DELETE_WINDOW', self.exit_app)
-        self.init_gui()
+        self.init_all_patterns()
+        self.run_app()
 
     def get_current_pattern_dict(self):
         return self.all_patterns[self.current_pattern.get()]
@@ -121,8 +117,33 @@ class DrumMachine:
         if messagebox.askokcancel("Quit", "Really quit?"):
             self.root.destroy()
 
+    def display_pattern_name(self):
+        self.current_pattern_name_widget.config(state='normal')
+        self.current_pattern_name_widget.delete(0, 'end')
+        self.current_pattern_name_widget.insert(0,
+                                                'Pattern {}'.format(self.current_pattern.get()))
+        self.current_pattern_name_widget.config(state='readonly')
+
+    def restart_play_of_new_pattern(self):
+        self.start_play()
+
     def on_pattern_changed(self):
-        pass
+        self.change_pattern()
+
+    def change_pattern(self):
+        if self.now_playing:
+            self.stop_play()
+            self.now_playing = True
+        self.display_pattern_name()
+        self.create_left_drum_loader()
+        self.display_all_drum_file_names()
+        self.number_of_units.set(self.get_number_of_units())
+        self.bpu.set(self.get_bpu())
+        self.beats_per_minute.set(self.get_beats_per_minute())
+        self.create_right_button_matrix()
+        self.display_all_button_colors()
+        if self.now_playing:
+            self.restart_play_of_new_pattern()
 
     def on_number_of_units_changed(self):
         self.set_number_of_units()
@@ -161,34 +182,21 @@ class DrumMachine:
         self.thread = threading.Thread(target = self.play_pattern)
         self.thread.start()
 
-    def toggle_play_button_state(self):
-        if self.now_playing:
-            self.play_button.config(state="disabled")
-        else:
-            self.play_button.config(state="normal")
-
     def on_play_button_clicked(self):
         self.start_play()
-        self.toggle_play_button_state()
-
-    def on_stop_button_clicked(self):
-        self.stop_play()
-        self.toggle_play_button_state()
-
-    def on_loop_button_toggled(self):
-        self.loop = self.to_loop.get()
-        self.keep_playing = self.loop
-        if self.now_playing:
-            self.now_playing = self.loop
         self.toggle_play_button_state()
 
     def start_play(self):
         self.init_pygame()
         self.play_in_thread()
 
+    def on_stop_button_clicked(self):
+        self.stop_play()
+        self.toggle_play_button_state()
+
     def stop_play(self):
-        self.keep_playing = False
         self.now_playing = False
+        self.keep_playing = False
 
     def init_pygame(self):
         pygame.mixer.pre_init(44100, -16, 1, 512)
@@ -200,6 +208,12 @@ class DrumMachine:
 
     def get_column_from_matrix(self, matrix, i):
         return [row[i] for row in matrix]
+
+    def toggle_play_button_state(self):
+        if self.now_playing:
+            self.play_button.config(state="disabled")
+        else:
+            self.play_button.config(state="normal")
 
     def play_pattern(self):
         self.keep_playing = True
@@ -227,6 +241,13 @@ class DrumMachine:
         beats_per_second = beats_per_minute / 60
         time_to_play_each_column = 1 / beats_per_second
         return time_to_play_each_column
+
+    def on_loop_button_toggled(self):
+        self.loop = self.to_loop.get()
+        self.keep_playing = self.loop
+        if self.now_playing:
+            self.now_playing = self.loop
+        self.toggle_play_button_state()
 
     def on_beats_per_minute_changed(self):
         self.set_beats_per_minute()
@@ -335,8 +356,9 @@ class DrumMachine:
         self.bpu.set(INITIAL_BPU)
         Spinbox(topbar_frame, from_=1, to=MAX_BPU, width=5, textvariable=self.bpu,
                 command=self.on_bpu_changed).grid(row=0, column=7)
+        self.display_pattern_name()
 
-    def init_gui(self):
+    def run_app(self):
         self.create_top_bar()
         self.create_left_drum_loader()
         self.create_right_button_matrix()
