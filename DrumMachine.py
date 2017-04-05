@@ -1,35 +1,22 @@
 """
 Code illustration: 
-    Displaying All Visual Elements:
-    
-        Methods newly defined and implemented here:
-            - init_gui()
-            - create_top_bar()
-            - create_left_drum_loader()
-            - create_right_button_matrix()
-            - create_play_bar()
-            - find_number_of_columns()
-            - display_button_color()
-            - display_all_button_colors()
-            - get_button_value()
-            - on_button_clicked()
-            - process_button_clicked()
-            - set_button_value()
-            
-        Methods added as command callback, defined here but not yet implemented
-            - on_pattern_changed()
-            - on_number_of_units_changed()
-            - on_bpu_changed()
-            - on_open_file_button_clicked()
-            - on_button_clicked()
-            - on_play_button_clicked()
-            - on_stop_button_clicked()
-            - on_loop_button_toggled()
-            - on_beats_per_minute_changed()
-
+    - Adding all the getter & setter methods for our data structure.
+            - get_current_pattern_dict()     
+            - get_bpu()
+            - set_bpu()
+            - get_number_of_units()
+            - set_number_of_units()
+            - get_list_of_drum_files()
+            - get_drum_file_path(drum_index)
+            - set_drum_file_path(drum_index, file_path)
+            - get_is_button_clicked_list()
+            - set_is_button_clicked_list(num_of_rows, num_of_columns)
+            - get_beats_per_minute()
+            - set_beats_per_minute()
+    - Defining on_number_of_units_changed() method
+    - Defining  on_bpu_changed() method 
 """
 from tkinter import *
-
 
 PROGRAM_NAME = ' Explosion Drum Machine '
 MAX_NUMBER_OF_PATTERNS = 10
@@ -57,9 +44,57 @@ class DrumMachine:
         self.bpu = IntVar()
         self.to_loop = BooleanVar()
         self.beats_per_minute = IntVar()
+
         self.drum_load_entry_widget = [None] * MAX_NUMBER_OF_DRUM_SAMPLES
+
         self.init_all_patterns()
         self.init_gui()
+
+    #
+    # getters and setters begins
+    #
+
+    def get_current_pattern_dict(self):
+        return self.all_patterns[self.current_pattern.get()]
+
+    def get_bpu(self):
+        return self.get_current_pattern_dict()['bpu']
+
+    def set_bpu(self):
+        self.get_current_pattern_dict()['bpu'] = self.bpu.get()
+
+    def get_number_of_units(self):
+        return self.get_current_pattern_dict()['number_of_units']
+
+    def set_number_of_units(self):
+        self.get_current_pattern_dict(
+        )['number_of_units'] = self.number_of_units.get()
+
+    def get_list_of_drum_files(self):
+        return self.get_current_pattern_dict()['list_of_drum_files']
+
+    def get_drum_file_path(self, drum_index):
+        return self.get_list_of_drum_files()[drum_index]
+
+    def set_drum_file_path(self, drum_index, file_path):
+        self.get_list_of_drum_files()[drum_index] = file_path
+
+    def get_is_button_clicked_list(self):
+        return self.get_current_pattern_dict()['is_button_clicked_list']
+
+    def set_is_button_clicked_list(self, num_of_rows, num_of_columns):
+        self.get_current_pattern_dict()['is_button_clicked_list'] = [
+            [False] * num_of_columns for x in range(num_of_rows)]
+
+    def get_beats_per_minute(self):
+        return self.get_current_pattern_dict()['beats_per_minute']
+
+    def set_beats_per_minute(self):
+        self.get_current_pattern_dict(
+        )['beats_per_minute'] = self.beats_per_minute.get()
+    #
+    # getters & setters ends
+    #
 
     def init_all_patterns(self):
         self.all_patterns = [
@@ -83,10 +118,16 @@ class DrumMachine:
         pass
 
     def on_number_of_units_changed(self):
-        pass
+        self.set_number_of_units()
+        self.set_is_button_clicked_list(MAX_NUMBER_OF_DRUM_SAMPLES,
+                                        self.find_number_of_columns())
+        self.create_right_button_matrix()
 
     def on_bpu_changed(self):
-        pass
+        self.set_bpu()
+        self.set_is_button_clicked_list(MAX_NUMBER_OF_DRUM_SAMPLES,
+                                        self.find_number_of_columns())
+        self.create_right_button_matrix()
 
     def on_open_file_button_clicked(self, drum_index):
         pass
