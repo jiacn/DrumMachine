@@ -1,19 +1,43 @@
 """
-Code illustration: 
-    - Loading drum samples
+               ****** Non reponsive warning ! ******
+    - This program becomes non responsive on playback of audio files.
+    - It is meant to be that way as a demonstration.
+    - You can close the program by stopping the python script
+                *************************************
+
+Code illustration:
+
+    Playing Audio
+        New Modules Imported Here
+            - import pygame
+            - import time
         
-        New modules imported here:
-            - os, tkinter.filedialog
+        Attributes Added here:
+            - self.loop
+            - self.now_playing
+            
+        New Methods defined here:
+            init_pygame()
+            play_sound()
+            start_play()
+            stop_play()
+            play_pattern()
+            time_to_play_each_column()
+            on_beats_per_minute_changed()
+            get_column_from_matrix()
         
-        New methods implemented here
-            on_open_file_button_clicked():
-            display_all_drum_file_names():
-            display_drum_name():
+        Dummy Methods that existed earlier but modified here:
+            on_loop_button_toggled()
+            on_play_button_clicked()
+            on_stop_button_clicked()
+            
         
 """
 import os
+import time
 from tkinter import *
 from tkinter import filedialog
+import pygame
 
 
 PROGRAM_NAME = ' Explosion Drum Machine '
@@ -42,7 +66,8 @@ class DrumMachine:
         self.bpu = IntVar()
         self.to_loop = BooleanVar()
         self.beats_per_minute = IntVar()
-
+        self.loop = True
+        self.now_playing = False
         self.drum_load_entry_widget = [None] * MAX_NUMBER_OF_DRUM_SAMPLES
 
         self.init_all_patterns()
@@ -121,14 +146,14 @@ class DrumMachine:
         self.create_right_button_matrix()
 
     def on_open_file_button_clicked(self, drum_index):
-        def event_handler():
+        def callback():
             file_path = filedialog.askopenfilename(defaultextension=".wav",
                                                    filetypes=[("Wave Files", "*.wav"), ("OGG Files", "*.ogg")])
             if not file_path:
                 return
             self.set_drum_file_path(drum_index, file_path)
             self.display_all_drum_file_names()
-        return event_handler
+        return callback
 
     def display_all_drum_file_names(self):
         for i, drum_name in enumerate(self.get_list_of_drum_files()):
@@ -142,16 +167,61 @@ class DrumMachine:
         self.drum_load_entry_widget[text_widget_num].insert(0, drum_name)
 
     def on_play_button_clicked(self):
-        pass
+        self.start_play()
+
+    def start_play(self):
+        self.init_pygame()
+        self.play_pattern()
 
     def on_stop_button_clicked(self):
-        pass
+        self.stop_play()
+
+    def stop_play(self):
+        self.keep_playing = False
+
+    def init_pygame(self):
+        pygame.mixer.pre_init(44100, -16, 1, 512)
+        pygame.init()
+
+    def play_sound(self, sound_filename):
+        if sound_filename is not None:
+            pygame.mixer.Sound(sound_filename).play()
+
+    def get_column_from_matrix(self, matrix, i):
+        return [row[i] for row in matrix]
+
+    def play_pattern(self):
+        self.keep_playing = True
+        while self.keep_playing:
+            self.now_playing = True
+            play_list = self.get_is_button_clicked_list()
+            num_columns = len(play_list[0])
+            for column_index in range(num_columns):
+                column_to_play = self.get_column_from_matrix(
+                    play_list, column_index)
+                for i, item in enumerate(column_to_play):
+                    if item:
+                        sound_filename = self.get_drum_file_path(i)
+                        self.play_sound(sound_filename)
+                time.sleep(self.time_to_play_each_column())
+                if not self.keep_playing:
+                    break
+            if not self.loop:
+                self.keep_playing = self.loop
+        self.now_playing = False
+
+    def time_to_play_each_column(self):
+        beats_per_minute = self.get_beats_per_minute()
+        beats_per_second = beats_per_minute / 60
+        time_to_play_each_column = 1 / beats_per_second
+        return time_to_play_each_column
 
     def on_loop_button_toggled(self):
-        pass
+        self.loop = self.to_loop.get()
+        self.keep_playing = self.loop
 
     def on_beats_per_minute_changed(self):
-        pass
+        self.set_beats_per_minute()
 
     def get_button_value(self, row, col):
         return self.all_patterns[self.current_pattern.get()][
@@ -169,9 +239,9 @@ class DrumMachine:
             'is_button_clicked_list'][row][col] = bool_value
 
     def on_button_clicked(self, row, col):
-        def event_handler():
+        def callback():
             self.process_button_clicked(row, col)
-        return event_handler
+        return callback
 
     def display_all_button_colors(self):
         number_of_columns = self.find_number_of_columns()
