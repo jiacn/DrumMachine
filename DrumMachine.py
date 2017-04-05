@@ -1,42 +1,28 @@
 """
-               ****** Non reponsive warning ! ******
-    - This program becomes non responsive on playback of audio files.
-    - It is meant to be that way as a demonstration.
-    - You can close the program by stopping the python script
-                *************************************
-
-Code illustration:
-
-    Playing Audio
-        New Modules Imported Here
-            - import pygame
-            - import time
-        
-        Attributes Added here:
-            - self.loop
-            - self.now_playing
+    Tkinter and Threading
+    **********************
+       New modules imported here:
+            - threading
             
-        New Methods defined here:
-            init_pygame()
-            play_sound()
-            start_play()
-            stop_play()
-            play_pattern()
-            time_to_play_each_column()
-            on_beats_per_minute_changed()
-            get_column_from_matrix()
-        
-        Dummy Methods that existed earlier but modified here:
-            on_loop_button_toggled()
-            on_play_button_clicked()
-            on_stop_button_clicked()
+        New methods defined here:
+            - play_in_thread()
+            - toggle_play_button_state()
             
-        
+        Method modified here:
+            - start_play()
+            - __init__ method - to override the close button
+            - on_play_button_clicked()
+            - on_stop_button_clicked()
+            - on_loop_button_toggled()
+            - play_pattern() - added a call to toggle_play_button_state()
+
 """
 import os
 import time
+import threading
 from tkinter import *
 from tkinter import filedialog
+from tkinter import messagebox
 import pygame
 
 
@@ -69,8 +55,8 @@ class DrumMachine:
         self.loop = True
         self.now_playing = False
         self.drum_load_entry_widget = [None] * MAX_NUMBER_OF_DRUM_SAMPLES
-
         self.init_all_patterns()
+        self.root.protocol('WM_DELETE_WINDOW', self.exit_app)
         self.init_gui()
 
     def get_current_pattern_dict(self):
@@ -130,6 +116,11 @@ class DrumMachine:
     def init_is_button_clicked_list(self, num_of_rows, num_of_columns):
         return [[False] * num_of_columns for x in range(num_of_rows)]
 
+    def exit_app(self):
+        self.keep_playing = False
+        if messagebox.askokcancel("Quit", "Really quit?"):
+            self.root.destroy()
+
     def on_pattern_changed(self):
         pass
 
@@ -146,14 +137,14 @@ class DrumMachine:
         self.create_right_button_matrix()
 
     def on_open_file_button_clicked(self, drum_index):
-        def callback():
+        def event_handler():
             file_path = filedialog.askopenfilename(defaultextension=".wav",
                                                    filetypes=[("Wave Files", "*.wav"), ("OGG Files", "*.ogg")])
             if not file_path:
                 return
             self.set_drum_file_path(drum_index, file_path)
             self.display_all_drum_file_names()
-        return callback
+        return event_handler
 
     def display_all_drum_file_names(self):
         for i, drum_name in enumerate(self.get_list_of_drum_files()):
@@ -166,18 +157,38 @@ class DrumMachine:
         self.drum_load_entry_widget[text_widget_num].delete(0, END)
         self.drum_load_entry_widget[text_widget_num].insert(0, drum_name)
 
+    def play_in_thread(self):
+        self.thread = threading.Thread(target = self.play_pattern)
+        self.thread.start()
+
+    def toggle_play_button_state(self):
+        if self.now_playing:
+            self.play_button.config(state="disabled")
+        else:
+            self.play_button.config(state="normal")
+
     def on_play_button_clicked(self):
         self.start_play()
-
-    def start_play(self):
-        self.init_pygame()
-        self.play_pattern()
+        self.toggle_play_button_state()
 
     def on_stop_button_clicked(self):
         self.stop_play()
+        self.toggle_play_button_state()
+
+    def on_loop_button_toggled(self):
+        self.loop = self.to_loop.get()
+        self.keep_playing = self.loop
+        if self.now_playing:
+            self.now_playing = self.loop
+        self.toggle_play_button_state()
+
+    def start_play(self):
+        self.init_pygame()
+        self.play_in_thread()
 
     def stop_play(self):
         self.keep_playing = False
+        self.now_playing = False
 
     def init_pygame(self):
         pygame.mixer.pre_init(44100, -16, 1, 512)
@@ -209,16 +220,13 @@ class DrumMachine:
             if not self.loop:
                 self.keep_playing = self.loop
         self.now_playing = False
+        self.toggle_play_button_state()
 
     def time_to_play_each_column(self):
         beats_per_minute = self.get_beats_per_minute()
         beats_per_second = beats_per_minute / 60
         time_to_play_each_column = 1 / beats_per_second
         return time_to_play_each_column
-
-    def on_loop_button_toggled(self):
-        self.loop = self.to_loop.get()
-        self.keep_playing = self.loop
 
     def on_beats_per_minute_changed(self):
         self.set_beats_per_minute()
@@ -239,9 +247,9 @@ class DrumMachine:
             'is_button_clicked_list'][row][col] = bool_value
 
     def on_button_clicked(self, row, col):
-        def callback():
+        def event_handler():
             self.process_button_clicked(row, col)
-        return callback
+        return event_handler
 
     def display_all_button_colors(self):
         number_of_columns = self.find_number_of_columns()
